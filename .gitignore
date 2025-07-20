@@ -1,0 +1,15 @@
+venv
+env
+
+.env
+
+utils.py
+
+output/
+stock_videos/
+
+notes.txt
+
+__pycache__
+
+*.ipynb
