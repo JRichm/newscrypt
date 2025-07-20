@@ -15,7 +15,7 @@ AZURE_REGION = os.getenv("AZURE_REGION", "eastus")
 
 # Directories
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
-STOCK_VIDEOS_DIR = os.getenv("STOCK_VIDEOS_DIR", "./stock_videos")
+STOCK_VIDEOS_DIR = os.getenv("STOCK_VIDEOS_DIR", "E:\$Videos\STOCK_VIDEOS")
 
 
 # Video settings
