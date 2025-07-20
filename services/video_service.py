@@ -135,24 +135,46 @@ class VideoService:
     def _match_script_to_video(self, script_lower: str, video_files: List[Path]) -> str:
         """Match script content to approriate video category"""
 
-        keywords = {
-            'tech': ['technology', 'computer', 'ai', 'digital', 'software', 'internet', 'data'],
-            'business': ['business', 'economy', 'market', 'finance', 'money', 'trade', 'company'],
-            'nature': ['nature', 'environment', 'climate', 'weather', 'earth', 'ocean', 'forest'],
-            'city': ['city', 'urban', 'building', 'street', 'downtown', 'architecture'],
-            'people': ['people', 'person', 'community', 'social', 'human', 'crowd'],
-            'health': ['health', 'medical', 'doctor', 'hospital', 'medicine', 'fitness'],
-            'sports': ['sports', 'game', 'team', 'player', 'competition', 'athletics']
-        }
+        script_words = set(script_lower.split())
 
-        # find category match
-        for category, words in keywords.items():
-            if any(word in script_lower for word in words):
-                category_clips = [f for f in video_files if category in str(f).lower()]
-                if category_clips:
-                    return str(random.choice(category_clips))
+        best_match = None
+        best_score = 0
+
+        for video_file in video_files:
+            filename_keywords = video_file.stem.lower().split('_')
+            filename_words = set(filename_keywords)
+
+            matches = len(script_words.intersection(filename_words))
+
+            if matches > best_score:
+                best_score = matches
+                best_match = video_file
+
+        if best_match and best_score > 0:
+            print(f"Found a match with a score of {best_score}")
+            return str(best_match)
+        else:
+            print(f"No match found picking random video")
+            return str(random.choice(video_files))
+
+        # keywords = {
+        #     'tech': ['technology', 'computer', 'ai', 'digital', 'software', 'internet', 'data'],
+        #     'business': ['business', 'economy', 'market', 'finance', 'money', 'trade', 'company'],
+        #     'nature': ['nature', 'environment', 'climate', 'weather', 'earth', 'ocean', 'forest'],
+        #     'city': ['city', 'urban', 'building', 'street', 'downtown', 'architecture'],
+        #     'people': ['people', 'person', 'community', 'social', 'human', 'crowd'],
+        #     'health': ['health', 'medical', 'doctor', 'hospital', 'medicine', 'fitness'],
+        #     'sports': ['sports', 'game', 'team', 'player', 'competition', 'athletics']
+        # }
+
+        # # find category match
+        # for category, words in keywords.items():
+        #     if any(word in script_lower for word in words):
+        #         category_clips = [f for f in video_files if category in str(f).lower()]
+        #         if category_clips:
+        #             return str(random.choice(category_clips))
         
-        return str(random.choice(category_clips))
+        # return str(random.choice(category_clips))
     
 
     def _create_default_video(self) -> Optional[str]:
