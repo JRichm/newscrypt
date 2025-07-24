@@ -4,15 +4,25 @@ import random
 from pathlib import Path
 from typing import Optional, List
 
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
+from collections import Counter
+
 try:
     from moviepy.editor import (
-        VideoFileClip, AudioFileClip, CompositeVideoClip, 
-        ColorClip
+        VideoFileClip,
+        AudioFileClip,
+        CompositeVideoClip,
+        ColorClip,
+        concatenate_videoclips
     )
     moviepy_available = True
 except ImportError:
     moviepy_available = False
 
+from pypexel import Pexels
 from config import (
     STOCK_VIDEOS_DIR,
     OUTPUT_DIR,
@@ -32,48 +42,62 @@ class VideoService:
         self.subtitle_service = SubtitleService()
 
 
+    
+    def _extract_keywords_nltk(self, text, num_keywords=10):
+        tokens = word_tokenize(text.lower())
+        pos_tags = pos_tag(tokens)
+        
+        stop_words = set(stopwords.words('english'))
+        keywords = [word for word, pos in pos_tags 
+                    if pos.startswith(('NN', 'JJ')) and 
+                    word not in stop_words and 
+                    len(word) > 2 and 
+                    word.isalpha()]
+        
+        keyword_freq = Counter(keywords)
+        return [word for word, freq in keyword_freq.most_common(num_keywords)]
+
+
     def select_clip(self, script_text: str) -> Optional[str]:
         """Select appropriate stock video clip based on script content"""
 
-        if not os.path.exists(STOCK_VIDEOS_DIR):
-            print(f"Stock videos directory not found: {STOCK_VIDEOS_DIR}")
-            return self._create_default_video()
-        
-        try:
-            video_files = self._find_video_files()
+        pexels = Pexels()
 
-            if not video_files:
-                print("No video files found in stock directory")
-                return self._create_default_video()
-        
-            # try to match script content to video category
-            selected_clip = self._match_script_to_video(script_text.lower(), video_files)
-            return selected_clip
-            
-        except Exception as e:
-            print(f"Error selecting clip: {e}")
-            return self._create_default_video()
+        keywords = self._extract_keywords_nltk(script_text)
+
+        videos = pexels.search_videos(query=str(keywords), as_objects=True)
+
+        video_paths = [pexels.download_video(vid, quality='hd') for vid in videos[:3]]
+
+        return video_paths
+
         
     
-    def compose_video(self, clip_path: str, audio_path: str, script_text: str) -> Optional[str]:
+    def compose_video(self, clip_paths: List[str], audio_path: str, script_text: str) -> Optional[str]:
         """Compose final video with clip, audio, and subtitles"""
 
+        print(len(clip_paths))
         if not moviepy_available:
             print("MoviePy not available for video composition")
             return None
         
-        if not all([clip_path, audio_path, script_text]):
+        if not all([clip_paths, audio_path, script_text]):
             print("Missing required components for video composition")
             return None
         
-        video = None
+        videos = []
         audio = None
         final_video = None
 
         try:
             # load audio and video
-            video = VideoFileClip(clip_path)
+            videos = [VideoFileClip(clip_path) for clip_path in clip_paths]
             audio = AudioFileClip(audio_path)
+
+            if len(videos) > 1:
+                video = concatenate_videoclips(videos)
+            else:
+                video = videos[0]
 
             # adjust duration
             video_duration = min(video.duration, audio.duration, MAX_VIDEO_DURATION)
