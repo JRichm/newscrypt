@@ -8,6 +8,7 @@ utils.py
 output/
 stock_videos/
 
+notebooks
 notes.txt
 
 __pycache__
