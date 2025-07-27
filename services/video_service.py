@@ -76,7 +76,6 @@ class VideoService:
     def compose_video(self, clip_paths: List[str], audio_path: str, script_text: str) -> Optional[str]:
         """Compose final video with clip, audio, and subtitles"""
 
-        print(len(clip_paths))
         if not moviepy_available:
             print("MoviePy not available for video composition")
             return None
@@ -85,19 +84,47 @@ class VideoService:
             print("Missing required components for video composition")
             return None
         
-        videos = []
-        audio = None
+        # validate file paths
+        missing_files = []
+        for clip_path in clip_paths:
+            if not os.path.exists(clip_path):
+                missing_files.append(clip_path)
+
+        if not os.path.exists(audio_path):
+            missing_files.append(audio_path)
+        
+        if missing_files:
+            print(f"Missing files: {missing_files}")
+            return None
+
+        video_clips = []
+        audio_clip = None
+        concatenated_video = None
         final_video = None
+        output_path = None
 
         try:
-            # load audio and video
-            videos = [VideoFileClip(clip_path) for clip_path in clip_paths]
-            audio = AudioFileClip(audio_path)
-
-            if len(videos) > 1:
-                video = concatenate_videoclips(videos)
+            # load video clips
+            for i, clip_path in enumerate(clip_paths):
+                try:
+                    clip = VideoFileClip(clip_path)
+                    video_clips.append(clip)
+                except Exception as e:
+                    print(f"Error loading video clip {clip_path}: {e}")
+                    raise
+            
+            # load audio
+            try:
+                audio_clip = AudioFileClip(audio_path)
+            except Exception as e:
+                print(f"Error loading audio {audio_path}: {e}")
+                raise
+            
+            # concatenate videos if multiple clips
+            if len(video_clips) > 1:
+                concatenated_video = concatenate_videoclips(video_clips)
             else:
-                video = videos[0]
+                concatenated_video = video_clips[0]
 
             # calculate final duration
             target_duration = min(audio_clip.duration, MAX_VIDEO_DURATION)
@@ -126,15 +153,16 @@ class VideoService:
 
             # compose final video
             if subtitle_clips:
-                final_video = CompositeVideoClip([video.set_audio(audio)] + subtitle_clips)
+                final_video = CompositeVideoClip([trimmed_video.set_audio(trimmed_audio)] + subtitle_clips)
                 print(f"Created video with {len(subtitle_clips)} subtitle clips")
             else:
-                final_video = video.set_audio(audio)
-                print("Created video without subtitles")
+                final_video = trimmed_video.set_audio(trimmed_audio)
+                print(f"Created video without subtitles")
 
+            # generate output path and write video
             output_path = self._generate_output_path()
-            print("Writing video file...")
-            
+            print(f"Writing video to: {output_path}")
+
             final_video.write_videofile(
                 output_path,
                 fps=DEFAULT_FPS,
@@ -146,6 +174,7 @@ class VideoService:
                 logger=None,
             )
 
+            print("Video composition completed successfully")
             return output_path
 
         except Exception as e:
