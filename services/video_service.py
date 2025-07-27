@@ -154,13 +154,44 @@ class VideoService:
         
         # cleanup
         finally:
-            if video:
-                video.close()
-            if audio:
-                audio.close()
+            # clean up temp files
+
+            # close individual video clips
+            for clip in video_clips:
+                try:
+                    clip.close()
+                except:
+                    pass
+
+            # close audio clip
+            if audio_clip:
+                try:
+                    audio_clip.close()
+                except:
+                    pass
+
+            # close concatenated video
+            if concatenated_video and len(video_clips) > 1:
+                try:
+                    concatenated_video.close()
+                except:
+                    pass
+
+            # close final video
             if final_video:
-                final_video.close()
-            self.subtitle_service.cleanup_temp_files()
+                try:
+                    final_video.close()
+                except:
+                    pass
+            
+            # clean up subtitle service temp files
+            try:
+                self.subtitle_service.cleanup_temp_files()
+            except:
+                pass
+
+            print("Cleanup completed")
+
 
     
     def _find_video_files(self) -> List[Path]:
