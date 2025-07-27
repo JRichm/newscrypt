@@ -147,12 +147,17 @@ class VideoService:
             )
 
             return output_path
-        
+
         except Exception as e:
-            print(f"Error composing video: {e}")
+            
+            # cleanup output file if it was created but process failed
+            if output_path and os.path.exists(output_path):
+                try:
+                    os.remove(output_path)
+                except:
+                    pass
             return None
-        
-        # cleanup
+
         finally:
             # clean up temp files
 
