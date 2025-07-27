@@ -99,10 +99,26 @@ class VideoService:
             else:
                 video = videos[0]
 
-            # adjust duration
-            video_duration = min(video.duration, audio.duration, MAX_VIDEO_DURATION)
-            video = video.subclip(0, video_duration)
-            audio = audio.subclip(0, video_duration)
+            # calculate final duration
+            target_duration = min(audio_clip.duration, MAX_VIDEO_DURATION)
+
+            # check if video needs to be looped to match audio length
+            if concatenated_video.duration < target_duration:
+                loops_needed = int(target_duration / concatenated_video.duration) + 1
+                print(f"Video duration ({concatenated_video.duration:.2f}s) shorter than target ({target_duration:.2f}s)")
+                print(f"Looping video {loops_needed} times...")
+                
+                looped_video = concatenate_videoclips([concatenated_video] * loops_needed)
+                if len(video_clips) > 1:
+                    concatenated_video.close()
+
+                concatenated_video = looped_video
+
+            video_duration = target_duration
+
+            # trim video and audio to match duration
+            trimmed_video = concatenated_video.subclip(0, video_duration)
+            trimmed_audio = audio_clip.subclip(0, video_duration)
 
             # create subtitles
             subtitle_chunks = self.subtitle_service.create_subtitle_chunks(script_text, video_duration)
