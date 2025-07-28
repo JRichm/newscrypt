@@ -42,7 +42,52 @@ class VideoService:
         self.subtitle_service = SubtitleService()
 
 
-    
+    def _crop_video(self, video_clip: VideoFileClip, video_width: int = VIDEO_WIDTH, video_height: int = VIDEO_HEIGHT) -> VideoFileClip:
+        """Resize video to exactly fill target dimensions (may stretch video)"""
+        
+        if not moviepy_available:
+            print("MoviePy not available for video resize")
+            return video_clip
+
+        current_width, current_height = video_clip.size
+
+        try:
+            x_center = current_width // 2
+            y_center = current_height // 2
+            
+            x1 = max(0, x_center - (video_width // 2))
+            x2 = min(current_width, x1 + video_width)
+            
+            y1 = max(0, y_center - (video_height // 2))
+            y2 = min(current_height, y1 + video_height)
+            
+            if x2 - x1 < video_width:
+                x1 = 0
+                x2 = current_width
+            
+            if y2 - y1 < video_height:
+                y1 = 0
+                y2 = current_height
+            
+            print(f"Crop coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+            
+            cropped_clip = video_clip.crop(x1=x1, y1=y1, x2=x2, y2=y2)
+            
+            if cropped_clip.size != (video_width, video_height):
+                print(f"Final resize needed: {cropped_clip.size} -> ({video_width}, {video_height})")
+                cropped_clip = cropped_clip.resize((video_width, video_height))
+            
+            return cropped_clip
+        except Exception as e:
+            print(f"Error during crop operation: {e}")
+            print("Falling back to resize method")
+            try:
+                return video_clip.resize((video_width, video_height))
+            except:
+                print("Resize fallback also failed, returning original clip")
+                return video_clip
+
+
     def _extract_keywords_nltk(self, text, num_keywords=10):
         tokens = word_tokenize(text.lower())
         pos_tags = pos_tag(tokens)
@@ -109,6 +154,7 @@ class VideoService:
             for i, clip_path in enumerate(clip_paths):
                 try:
                     clip = VideoFileClip(clip_path)
+                    clip = self._crop_video(clip)
                     video_clips.append(clip)
                 except Exception as e:
                     print(f"Error loading video clip {clip_path}: {e}")
@@ -179,7 +225,7 @@ class VideoService:
             return output_path
 
         except Exception as e:
-            
+            print(e)
             # cleanup output file if it was created but process failed
             if output_path and os.path.exists(output_path):
                 try:
