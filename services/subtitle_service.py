@@ -1,4 +1,5 @@
 import os
+import re
 from typing import List, Dict, Optional
 
 # optional imports
@@ -23,7 +24,8 @@ from config import (
     SUBTITLE_STROKE_COLOR,
     SUBTITLE_STROKE_WIDTH,
     SUBTITLE_MAX_WORDS_PER_CHUNK,
-    VIDEO_WIDTH
+    VIDEO_WIDTH,
+    VIDEO_HEIGHT
 )
 
 
@@ -91,7 +93,7 @@ class SubtitleService:
         return chunks
     
     
-    def generate_subtitle_clips(self, subtitle_chunks: List[Dict]) -> List:
+    def generate_subtitle_clips(self, subtitle_chunks: List[Dict], video_width: int = VIDEO_WIDTH, video_height: int = VIDEO_HEIGHT) -> List:
         """Generate subtitle clips from chunks"""
 
         subtitle_clips = []
@@ -103,10 +105,10 @@ class SubtitleService:
         try:
             if pil_available:
                 print(f"Creating {len(subtitle_chunks)} synchronized subtitle clips with PIL...")
-                subtitle_clips = self._create_pil_subtitles(subtitle_chunks)
+                subtitle_clips = self._create_pil_subtitles(subtitle_chunks, video_width, video_height)
             else:
                 print("PIL not available, using basic TextClip...")
-                subtitle_clips = self._create_text_subtitles(subtitle_chunks)
+                subtitle_clips = self._create_text_subtitles(subtitle_chunks, video_width, video_height)
                 
         except Exception as e:
             print(f"Could not create subtitles: {e}")
@@ -114,37 +116,40 @@ class SubtitleService:
         return subtitle_clips
     
 
-    def _create_pil_subtitles(self, subtitle_chunks: List[Dict]) -> List:
+    def _create_pil_subtitles(self, subtitle_chunks: List[Dict], video_width: int, video_height: int) -> List:
         """Create subtitles using PIL for better quality"""
 
         subtitle_clips = []
         
         for i, chunk in enumerate(subtitle_chunks):
-            subtitle_image = self._create_subtitle_image(chunk['text'])
+            subtitle_image = self._create_subtitle_image(chunk['text'], video_width, video_height)
             if subtitle_image:
                 temp_img_path = os.path.join(OUTPUT_DIR, f"temp_subtitle_{i}.png")
                 subtitle_image.save(temp_img_path)
                 self.temp_files.append(temp_img_path)
                 
                 subtitle_clip = ImageClip(temp_img_path, duration=chunk['duration'])
-                subtitle_clip = subtitle_clip.set_start(chunk['start_time']).set_position(('center', 'bottom'))
+                subtitle_clip = subtitle_clip.set_start(chunk['start_time']).set_position(('center', 'center'))
                 subtitle_clips.append(subtitle_clip)
         
         return subtitle_clips
     
 
-    def _create_text_subtitles(self, subtitle_chunks: List[Dict]) -> List:
+    def _create_text_subtitles(self, subtitle_chunks: List[Dict], video_width: int, video_height: int) -> List:
         """Create basic text subtitles using MoviePy"""
 
         subtitle_clips = []
         
         for chunk in subtitle_chunks:
             try:
+                wrapped_text = self._wrap_text_for_width(chunk['text'], video_width)
                 subtitle = TextClip(
-                    chunk['text'],
+                    wrapped_text,
                     fontsize=SUBTITLE_FONTSIZE,
                     color=SUBTITLE_COLOR,
-                ).set_duration(chunk['duration']).set_start(chunk['start_time']).set_position(('center', 'bottom'))
+                    method='caption',
+                    size=(int(video_width * 0.9), None)
+                ).set_duration(chunk['duration']).set_start(chunk['start_time']).set_position(('center', 'center'))
                 subtitle_clips.append(subtitle)
             except Exception as e:
                 print(f"Skipping subtitle: {e}")
@@ -152,42 +157,78 @@ class SubtitleService:
         return subtitle_clips
     
 
-    def _create_subtitle_image(self, text: str, width: int = None, height: int = 200) -> Optional[Image.Image]:
+    def _wrap_text(self, text: str, font, max_width: int, draw) -> str:
+        """Wrap text to fit within specified width using PIL fonts"""
+
+        words = text.split()
+        lines = []
+        current_line = []
+
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            bbox = draw.textbbox((0, 0), test_line, font=font)
+            test_width = bbox[2] - bbox[0]
+
+            if test_width <= max_width:
+                current_line.append(word)
+            else:
+                if current_line:
+                    lines.append(' '.join(current_line))
+                    current_line = [word]
+                else:
+                    lines.append(word)
+
+        if current_line:
+            lines.append(' '.join(current_line))
+
+        return "\n".join(lines)
+        
+
+    def _get_line_height(self, font, draw) -> int:
+        bbox = draw.textbbox((0, 0), "Ay", font=font)
+        return bbox[3] - bbox[1] + 5
+
+
+    def _create_subtitle_image(self, text: str, video_width: int, video_height: int) -> Optional[Image.Image]:
         """Create a subtitle as an image using PIL"""
 
         if not pil_available:
             return None
         
-        width = width or VIDEO_WIDTH
-        
         try:
-            # Create transparent image
-            image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            
+            max_text_width = int(video_width * 0.9)
+            subtitle_height = int(video_height * 0.2)
+
+            image = Image.new("RGBA", (video_width, subtitle_height), (0, 0, 0, 0))
             draw = ImageDraw.Draw(image)
-            
-            # Try to load font
+
             font = self._load_font(SUBTITLE_FONTSIZE)
-            
-            # Get text dimensions
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            
-            # Center the text
-            x = (width - text_width) // 2
-            y = (height - text_height) // 2
-            
-            # Draw stroke
-            for adj_x in range(-SUBTITLE_STROKE_WIDTH, SUBTITLE_STROKE_WIDTH + 1):
-                for adj_y in range(-SUBTITLE_STROKE_WIDTH, SUBTITLE_STROKE_WIDTH + 1):
-                    if adj_x != 0 or adj_y != 0:
-                        draw.text((x + adj_x, y + adj_y), text, font=font, fill=SUBTITLE_STROKE_COLOR)
-            
-            # Draw main text
-            draw.text((x, y), text, font=font, fill=SUBTITLE_COLOR)
+
+            wrapped_text = self._wrap_text(text, font, max_text_width, draw)
+
+            lines = wrapped_text.split("\n")
+            line_height = self._get_line_height(font, draw)
+            total_text_height = len(lines) * line_height
+
+            y_start = (subtitle_height - total_text_height) // 2
+
+            for i, line in enumerate(lines):
+                bbox = draw.textbbox((0, 0), line, font=font)
+                line_width = bbox[2] - bbox[0]
+
+                x = (video_width - line_width) // 2
+                y = y_start + (i * line_height)
+
+                for adj_x in range(-SUBTITLE_STROKE_WIDTH, SUBTITLE_STROKE_WIDTH + 1):
+                    for adj_y in range(-SUBTITLE_STROKE_WIDTH, SUBTITLE_STROKE_WIDTH + 1):
+                        if adj_x != 0 or adj_y != 0:
+                            draw.text((x + adj_x, y + adj_y), line, font=font, fill=SUBTITLE_STROKE_COLOR)
+                
+                draw.text((x, y), line, font=font, fill=SUBTITLE_COLOR)
             
             return image
-            
+
         except Exception as e:
             print(f"Error creating subtitle image: {e}")
             return None
