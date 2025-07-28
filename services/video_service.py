@@ -69,9 +69,10 @@ class VideoService:
 
         video_paths = [pexels.download_video(vid, quality='hd') for vid in videos[:3]]
 
-        return video_paths
+        not_na_video_paths = [vp for vp in video_paths if vp]
 
-        
+        return not_na_video_paths
+
     
     def compose_video(self, clip_paths: List[str], audio_path: str, script_text: str) -> Optional[str]:
         """Compose final video with clip, audio, and subtitles"""
