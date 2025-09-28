@@ -43,49 +43,38 @@ class VideoService:
 
 
     def _crop_video(self, video_clip: VideoFileClip, video_width: int = VIDEO_WIDTH, video_height: int = VIDEO_HEIGHT) -> VideoFileClip:
-        """Resize video to exactly fill target dimensions (may stretch video)"""
+        """Resize and crop video without stretching"""
         
         if not moviepy_available:
             print("MoviePy not available for video resize")
             return video_clip
 
-        current_width, current_height = video_clip.size
-
         try:
-            x_center = current_width // 2
-            y_center = current_height // 2
+            current_width, current_height = video_clip.size
+            scale_factor = max(video_width / current_width, video_height / current_height)
             
-            x1 = max(0, x_center - (video_width // 2))
-            x2 = min(current_width, x1 + video_width)
             
-            y1 = max(0, y_center - (video_height // 2))
-            y2 = min(current_height, y1 + video_height)
+            resized_clip = video_clip.resize(scale_factor)
             
-            if x2 - x1 < video_width:
-                x1 = 0
-                x2 = current_width
+            new_width, new_height = resized_clip.size
+            print(f"after scaling: {new_width}x{new_height}")
             
-            if y2 - y1 < video_height:
-                y1 = 0
-                y2 = current_height
+            x_center = new_width / 2
+            y_center = new_height / 2
             
-            print(f"Crop coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+            cropped_clip = resized_clip.crop(
+                x_center=x_center,
+                y_center=y_center,
+                width=video_width,
+                height=video_height
+            )
             
-            cropped_clip = video_clip.crop(x1=x1, y1=y1, x2=x2, y2=y2)
-            
-            if cropped_clip.size != (video_width, video_height):
-                print(f"Final resize needed: {cropped_clip.size} -> ({video_width}, {video_height})")
-                cropped_clip = cropped_clip.resize((video_width, video_height))
-            
+            print(f"final crop size: {cropped_clip.size}")
             return cropped_clip
+            
         except Exception as e:
-            print(f"Error during crop operation: {e}")
-            print("Falling back to resize method")
-            try:
-                return video_clip.resize((video_width, video_height))
-            except:
-                print("Resize fallback also failed, returning original clip")
-                return video_clip
+            print(f"error during crop: {e}")
+            return video_clip
 
 
     def _extract_keywords_nltk(self, text, num_keywords=10):
