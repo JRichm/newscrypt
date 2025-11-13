@@ -94,7 +94,7 @@ class TTSService:
         
         try:
             clean_script = self._clean_script(script_text)
-            audio_path =- self._generate_audio_path("mp3")
+            audio_path = self._generate_audio_path("mp3")
 
             with self.openai_client.audio.speech.with_streaming_response.create(
                 model="tts-1",
