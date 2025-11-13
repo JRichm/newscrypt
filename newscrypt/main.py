@@ -1,11 +1,11 @@
 import os
 
 from newscrypt.config import OUTPUT_DIR
-from services.news_service import NewsService
-from services.script_service import ScriptService
-from services.tts_service import TTSService
-from services.video_service import VideoService
-from services.subtitle_service import SubtitleService
+from newscrypt.services.news_service import NewsService
+from newscrypt.services.script_service import ScriptService
+from newscrypt.services.tts_service import TTSService
+from newscrypt.services.video_service import VideoService
+from newscrypt.services.subtitle_service import SubtitleService
 
 
 class NewScrypt:
