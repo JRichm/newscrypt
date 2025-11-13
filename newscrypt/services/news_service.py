@@ -16,9 +16,7 @@ class NewsService:
         self.api_key = NEWS_API_KEY
         self.base_url = "https://newsapi.org/v2"
 
-    
-    def get_trending_topic(self) -> Optional[Dict[str, Any]]:
-        """Fetch trending news articles from News API"""
+    def get_trending_articles(self):
         
         if not NEWS_API_KEY:
             print("NEWS_API_KEY not found in environment variables")
@@ -43,14 +41,21 @@ class NewsService:
                 if article.get("description") and article.get("title")
             ]
 
-            return random.choice(valid_articles) if valid_articles else None
-
+            return valid_articles
+        
         except requests.exceptions.RequestException as e:
             print(f"Error fetching news: {e}")
             return None
         except Exception as e:
-            print(f"Unexpected error in get_trending_topic: {e}")
+            print(f"Unexpected error in get_trending_articles: {e}")
             return None
+
+        
+
+    def get_trending_topic(self) -> Optional[Dict[str, Any]]:
+        """Fetch trending news articles from News API"""
+        valid_articles = self.get_trending_articles() 
+        return random.choice(valid_articles) if valid_articles else None
 
 
     def search_news(self, query: str, page_size: int = 5) -> Optional[list]:
