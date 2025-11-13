@@ -33,7 +33,7 @@ from newscrypt.config import (
     DEFAULT_FPS
 )
 
-from services.subtitle_service import SubtitleService
+from .subtitle_service import SubtitleService
 
 class VideoService:
     """Service for video selection and composition"""
