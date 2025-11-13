@@ -16,7 +16,7 @@ except ImportError:
     moviepy_available = False
 
 
-from config import (
+from newscrypt.config import (
     OUTPUT_DIR,
     SUBTITLE_CHUNK_DURATION,
     SUBTITLE_FONTSIZE,

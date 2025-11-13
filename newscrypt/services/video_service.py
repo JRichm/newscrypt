@@ -23,7 +23,7 @@ except ImportError:
     moviepy_available = False
 
 from pypexel import Pexels
-from config import (
+from newscrypt.config import (
     STOCK_VIDEOS_DIR,
     OUTPUT_DIR,
     VIDEO_EXTENSIONS,

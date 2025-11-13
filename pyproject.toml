@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "newscrypt"
+version = "0.1.0"
+description = "Automated news video generator with TTS and subtitles"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["news", "video", "tts", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "nltk>=3.8.0",
+]
+
+[project.optional-dependencies]
+tts = [
+    "openai>=1.0.0",
+    "elevenlabs>=0.2.0",
+    "gTTS>=2.3.0",
+    "azure-cognitiveservices-speech>=1.30.0",
+]
+video = [
+    "moviepy>=1.0.3",
+    "Pillow>=10.0.0",
+]
+pexels = [
+    "pypexels>=1.0.0",
+]
+all = [
+    "openai>=1.0.0",
+    "elevenlabs>=0.2.0",
+    "gTTS>=2.3.0",
+    "azure-cognitiveservices-speech>=1.30.0",
+    "moviepy>=1.0.3",
+    "Pillow>=10.0.0",
+    "pypexels>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/JRichm/newscrypt"
+Repository = "https://github.com/JRichm/newscrypt"
+Issues = "https://github.com/JRichm/newscrypt/issues"
+
+[project.scripts]
+newscrypt = "newscrypt.main:main"
+
+[tool.setuptools]
+packages = ["newscrypt", "newscrypt.services"]
+
+[tool.setuptools.package-data]
+newscrypt = ["py.typed"]

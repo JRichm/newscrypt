@@ -1,6 +1,6 @@
 import os
 
-from config import OUTPUT_DIR
+from newscrypt.config import OUTPUT_DIR
 from services.news_service import NewsService
 from services.script_service import ScriptService
 from services.tts_service import TTSService

@@ -1,7 +1,7 @@
 
 from typing import Optional, Dict, Any
 from openai import OpenAI
-from config import OPENAI_API_KEY
+from newscrypt.config import OPENAI_API_KEY
 
 
 class ScriptService:

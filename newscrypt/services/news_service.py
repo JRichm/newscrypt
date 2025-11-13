@@ -1,7 +1,7 @@
 import requests
 import random
 from typing import Optional, Dict, Any
-from config import (
+from newscrypt.config import (
     NEWS_API_KEY,
     NEWS_PAGE_SIZE,
     NEWS_COUNTRY,
