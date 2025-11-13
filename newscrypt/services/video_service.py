@@ -11,7 +11,7 @@ from nltk.tag import pos_tag
 from collections import Counter
 
 try:
-    from moviepy.editor import (
+    from moviepy import (
         VideoFileClip,
         AudioFileClip,
         CompositeVideoClip,
