@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "newscrypt"
-version = "0.2.1"
+version = "0.3.0"
 description = "Automated news video generator with TTS and subtitles"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "James Richmond", email = "jblackenmusic@gmail.com"}
 ]
 keywords = ["news", "video", "tts", "automation"]
 classifiers = [
