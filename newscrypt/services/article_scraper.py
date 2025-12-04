@@ -4,7 +4,23 @@ from bs4 import BeautifulSoup
 
 class Scraper:
     def __init__(self):
-        pass
+        self.source_map = {
+            "tmz": self.tmz,
+            "abc": self.abc,
+            "nbc": self.nbc,
+            "cbs": self.cbs,
+            "live_science": self.live_science,
+            "variety": self.variety,
+            "the_washington_post": self.the_washington_post,
+            "associated_press": self.associated_press,
+            "_9to5mac": self._9to5mac,
+        }
+
+
+    def source(self, name, url):
+        func = self.source_map.get(name)
+        return func(url)
+
 
     def tmz(self, url):
         page = requests.get(url)
