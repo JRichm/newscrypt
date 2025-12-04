@@ -22,3 +22,35 @@ class Scraper:
         full_text = " ".join(text_items)
 
         return full_text
+    
+
+    def abc(self, url):
+        pass
+
+
+    def nbc(self, url):
+        pass
+
+
+    def cbs(self, url):
+        pass
+
+
+    def live_science(self, url):
+        pass
+
+
+    def variety(self, url):
+        pass
+
+
+    def the_washington_post(self, url):
+        pass
+
+
+    def associated_press(self, url):
+        pass
+
+
+    def _9to5mac(self, url):
+        pass
